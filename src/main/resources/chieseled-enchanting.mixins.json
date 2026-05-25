@@ -1,0 +1,21 @@
+{
+	"required": true,
+	"package": "hex.onlychiseled.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+		"EnchantmentScreenHandlerMixin",
+		"EnchantingTableBlockMixin",
+		"ChiseledBookshelfBlockEntityMixin",
+		"AnvilScreenHandlerMixin",
+		"ForgingScreenHandlerInputAccessor"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	},
+	"client": [
+		"EnchantmentScreenMixin"
+	]
+}

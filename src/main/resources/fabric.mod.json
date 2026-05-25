@@ -1,0 +1,28 @@
+{
+	"schemaVersion": 1,
+	"id": "chieseled-enchanting",
+	"version": "${version}",
+	"name": "Chieseled Enchanting",
+	"description": "Makes enchanting-table power come from nearby chiseled bookshelves that contain enchanted books instead of normal bookshelves.",
+	"authors": [
+		"Uto Buh"
+	],
+	"contact": {},
+	"license": "CC0-1.0",
+	"icon": "assets/chieseled-enchanting/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"hex.onlychiseled.ChieseledEnchanting"
+		]
+	},
+	"mixins": [
+		"chieseled-enchanting.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.2",
+		"minecraft": "~1.21.10",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
