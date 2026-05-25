@@ -77,8 +77,8 @@ public abstract class EnchantmentScreenHandlerMixin extends ScreenHandler implem
      * Replaces vanilla's bookshelf count inside EnchantmentScreenHandler#onContentChanged.
      *
      * <p>The rest of the vanilla offer-generation algorithm is intentionally preserved except for the level cap.
-     * Normal bookshelves contribute 0. Chiseled bookshelves contribute through their qualifying enchanted-book count,
-     * scaling beyond vanilla linearly up to extended power 30 at 90 qualifying enchanted books.</p>
+     * Regular bookshelves contribute one power each, just like vanilla. Chiseled bookshelves contribute through their
+     * qualifying enchanted-book count, scaling beyond vanilla linearly up to extended power 30.</p>
      */
     @Redirect(
             method = "onContentChanged",
@@ -97,7 +97,7 @@ public abstract class EnchantmentScreenHandlerMixin extends ScreenHandler implem
                     .getIndexedEntries();
             ItemStack enchantingStack = this.getSlot(0).getStack();
             ChiseledBookshelfEnchantingPower.LibraryAnalysis library = ChiseledBookshelfEnchantingPower.analyze(world, tablePos);
-            int chiseledBookshelfPower = library.enchantingPower();
+            int enchantingPower = library.enchantingPower();
             boolean revealSecondEnchantment = library.revealSecondEnchantment();
             this.chieseled_enchanting$unlockedOvercapEnchantments = library.unlockedOvercapEnchantments();
             this.chieseled_enchanting$clearSecondReveals();
@@ -108,7 +108,7 @@ public abstract class EnchantmentScreenHandlerMixin extends ScreenHandler implem
                 this.enchantmentPower[slot] = ChiseledBookshelfEnchantingPower.calculateRequiredExperienceLevel(
                         this.random,
                         slot,
-                        chiseledBookshelfPower,
+                        enchantingPower,
                         enchantingStack
                 );
                 this.enchantmentId[slot] = -1;

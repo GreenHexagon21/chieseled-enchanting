@@ -1,6 +1,6 @@
 # Chieseled Enchanting
 
-Fabric mod for Minecraft 1.21.10. Normal bookshelves no longer power enchanting tables. Instead, power comes from nearby chiseled bookshelves that contain enchanted books.
+Fabric mod for Minecraft 1.21.10. Regular bookshelves keep their vanilla enchanting-table behavior, while nearby chiseled bookshelves can add extended power and library-based bonuses when they contain enchanted books.
 
 ## Power rules
 
@@ -10,19 +10,21 @@ A chiseled bookshelf is considered valid when it is:
 - connected through an unobstructed enchantment-power transmitter gap, and
 - holding at least three enchanted books with stored enchantments.
 
-Power scales linearly from qualifying enchanted-book count:
+Regular bookshelves contribute `1` power each, exactly like vanilla. Chiseled bookshelf power scales linearly from qualifying enchanted-book count:
 
-| Qualifying enchanted books | Power |
-| ---: | ---: |
-| 3 | 1 |
-| 45 | 15 |
-| 90+ | 30 |
+| Provider setup | Power |
+| --- | ---: |
+| 1 regular bookshelf | 1 |
+| 15 regular bookshelves | 15 |
+| 3 qualifying enchanted books in chiseled shelves | 1 |
+| 45 qualifying enchanted books in chiseled shelves | 15 |
+| 90+ qualifying enchanted books in chiseled shelves | 30 |
 
-Normal bookshelves contribute `0`.
+Regular and chiseled power add together, capped at `30`.
 
 ## Particles
 
-Enchanting-table particles use the same chiseled-bookshelf placement and gap rules. Frequency is based on the number of enchanted books in each shelf:
+Enchanting-table particles use the same placement and gap rules as power. Regular bookshelves emit particles at the vanilla rate. Chiseled bookshelf frequency is based on the number of enchanted books in each shelf:
 
 | Enchanted books in shelf | Particle rate | Power from shelf |
 | ---: | --- | ---: |

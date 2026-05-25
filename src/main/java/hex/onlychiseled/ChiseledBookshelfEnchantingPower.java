@@ -53,19 +53,30 @@ public final class ChiseledBookshelfEnchantingPower {
     }
 
     /**
-     * Analyzes all valid chiseled bookshelves around an enchanting table in one pass.
+     * Analyzes all valid power providers around an enchanting table in one pass.
      *
-     * <p>A shelf is power-eligible only when it is in a vanilla bookshelf position, has an unobstructed transmitter
-     * gap, and contains at least three enchanted books with stored enchantments. Eligible books scale linearly:
-     * every three qualifying books add one enchanting power, capped at power 30.</p>
+     * <p>Regular bookshelves count exactly like vanilla: one unobstructed bookshelf adds one power. Chiseled
+     * bookshelves add power only when they contain at least three enchanted books with stored enchantments; every
+     * three qualifying enchanted books add one power. Total power is capped at 30.</p>
      */
     public static LibraryAnalysis analyze(World world, BlockPos tablePos) {
+        int regularBookshelfPower = 0;
         int qualifyingEnchantedBooks = 0;
         int storedEnchantmentLevelSum = 0;
         Set<RegistryEntry<Enchantment>> unlockedOvercapEnchantments = new HashSet<>();
 
         for (BlockPos providerOffset : EnchantingTableBlock.POWER_PROVIDER_OFFSETS) {
-            ChiseledBookshelfBlockEntity bookshelf = getValidChiseledBookshelf(world, tablePos, providerOffset);
+            if (!canTransmitPower(world, tablePos, providerOffset)) {
+                continue;
+            }
+
+            BlockPos shelfPos = tablePos.add(providerOffset);
+            if (world.getBlockState(shelfPos).isOf(Blocks.BOOKSHELF)) {
+                regularBookshelfPower++;
+                continue;
+            }
+
+            ChiseledBookshelfBlockEntity bookshelf = getChiseledBookshelf(world, shelfPos);
             if (bookshelf == null) {
                 continue;
             }
@@ -82,16 +93,17 @@ public final class ChiseledBookshelfEnchantingPower {
         }
 
         return new LibraryAnalysis(
-                calculatePowerFromQualifyingEnchantedBooks(qualifyingEnchantedBooks),
+                calculateTotalPower(regularBookshelfPower, qualifyingEnchantedBooks),
                 storedEnchantmentLevelSum > SECOND_REVEAL_ENCHANTMENT_LEVEL_SUM_THRESHOLD,
                 Set.copyOf(unlockedOvercapEnchantments)
         );
     }
 
 
-    private static int calculatePowerFromQualifyingEnchantedBooks(int qualifyingEnchantedBooks) {
-        int books = Math.max(0, qualifyingEnchantedBooks);
-        return Math.min(books / ENCHANTED_BOOKS_PER_POWER_LEVEL, EXTENDED_MAX_POWER);
+    private static int calculateTotalPower(int regularBookshelfPower, int qualifyingEnchantedBooks) {
+        int vanillaPower = Math.max(0, regularBookshelfPower);
+        int chiseledPower = Math.max(0, qualifyingEnchantedBooks) / ENCHANTED_BOOKS_PER_POWER_LEVEL;
+        return Math.min(vanillaPower + chiseledPower, EXTENDED_MAX_POWER);
     }
 
     /**
@@ -118,9 +130,13 @@ public final class ChiseledBookshelfEnchantingPower {
     }
 
     /**
-     * Returns true when the block at {@code tablePos + providerOffset} is a valid modded power provider.
+     * Returns true when the block at {@code tablePos + providerOffset} provides enchanting power.
      */
     public static boolean canProvidePower(World world, BlockPos tablePos, BlockPos providerOffset) {
+        if (isRegularBookshelfPowerProvider(world, tablePos, providerOffset)) {
+            return true;
+        }
+
         ChiseledBookshelfBlockEntity bookshelf = getValidChiseledBookshelf(world, tablePos, providerOffset);
         if (bookshelf == null) {
             return false;
@@ -134,6 +150,14 @@ public final class ChiseledBookshelfEnchantingPower {
         return world.isClient()
                 && bookshelf instanceof ChiseledBookshelfEnchantingPowerState syncedState
                 && syncedState.chieseled_enchanting$getParticleWeight() >= REQUIRED_ENCHANTED_BOOKS_PER_POWER_PROVIDER;
+    }
+
+    /**
+     * Returns true for an unobstructed vanilla bookshelf in a vanilla provider position.
+     */
+    public static boolean isRegularBookshelfPowerProvider(World world, BlockPos tablePos, BlockPos providerOffset) {
+        return canTransmitPower(world, tablePos, providerOffset)
+                && world.getBlockState(tablePos.add(providerOffset)).isOf(Blocks.BOOKSHELF);
     }
 
 
@@ -238,7 +262,10 @@ public final class ChiseledBookshelfEnchantingPower {
             return null;
         }
 
-        BlockPos shelfPos = tablePos.add(providerOffset);
+        return getChiseledBookshelf(world, tablePos.add(providerOffset));
+    }
+
+    private static ChiseledBookshelfBlockEntity getChiseledBookshelf(World world, BlockPos shelfPos) {
         if (!world.getBlockState(shelfPos).isOf(Blocks.CHISELED_BOOKSHELF)) {
             return null;
         }
