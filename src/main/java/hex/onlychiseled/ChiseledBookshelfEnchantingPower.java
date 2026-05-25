@@ -2,6 +2,7 @@ package hex.onlychiseled;
 
 import hex.onlychiseled.access.ChiseledBookshelfEnchantingPowerState;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.EnchantingTableBlock;
 import net.minecraft.block.entity.BlockEntity;
@@ -28,6 +29,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 public final class ChiseledBookshelfEnchantingPower {
+    public static final int VANILLA_BOOKSHELF_MAX_POWER = 15;
+    public static final int VANILLA_BOOKSHELF_PARTICLE_WEIGHT = 3;
     public static final int REQUIRED_ENCHANTED_BOOKS_PER_POWER_PROVIDER = 3;
     public static final int ENCHANTED_BOOKS_PER_POWER_LEVEL = 3;
     public static final int EXTENDED_MAX_POWER = 30;
@@ -55,12 +58,13 @@ public final class ChiseledBookshelfEnchantingPower {
     /**
      * Analyzes all valid power providers around an enchanting table in one pass.
      *
-     * <p>Regular bookshelves count exactly like vanilla: one unobstructed bookshelf adds one power. Chiseled
-     * bookshelves add power only when they contain at least three enchanted books with stored enchantments; every
-     * three qualifying enchanted books add one power. Total power is capped at 30.</p>
+     * <p>Regular bookshelves use vanilla placement and obstruction rules and contribute one power each, capped at
+     * vanilla power 15. Chiseled bookshelves use the same placement and obstruction rules, but only contribute when
+     * they contain at least three enchanted books with stored enchantments. Chiseled power scales linearly by stored
+     * book count. The combined room power is capped at this mod's extended power cap.</p>
      */
     public static LibraryAnalysis analyze(World world, BlockPos tablePos) {
-        int regularBookshelfPower = 0;
+        int regularBookshelfProviders = 0;
         int qualifyingEnchantedBooks = 0;
         int storedEnchantmentLevelSum = 0;
         Set<RegistryEntry<Enchantment>> unlockedOvercapEnchantments = new HashSet<>();
@@ -71,13 +75,19 @@ public final class ChiseledBookshelfEnchantingPower {
             }
 
             BlockPos shelfPos = tablePos.add(providerOffset);
-            if (world.getBlockState(shelfPos).isOf(Blocks.BOOKSHELF)) {
-                regularBookshelfPower++;
+            BlockState shelfState = world.getBlockState(shelfPos);
+
+            if (shelfState.isOf(Blocks.BOOKSHELF)) {
+                regularBookshelfProviders++;
                 continue;
             }
 
-            ChiseledBookshelfBlockEntity bookshelf = getChiseledBookshelf(world, shelfPos);
-            if (bookshelf == null) {
+            if (!shelfState.isOf(Blocks.CHISELED_BOOKSHELF)) {
+                continue;
+            }
+
+            BlockEntity blockEntity = world.getBlockEntity(shelfPos);
+            if (!(blockEntity instanceof ChiseledBookshelfBlockEntity bookshelf)) {
                 continue;
             }
 
@@ -93,22 +103,26 @@ public final class ChiseledBookshelfEnchantingPower {
         }
 
         return new LibraryAnalysis(
-                calculateTotalPower(regularBookshelfPower, qualifyingEnchantedBooks),
+                calculateCombinedPower(regularBookshelfProviders, qualifyingEnchantedBooks),
                 storedEnchantmentLevelSum > SECOND_REVEAL_ENCHANTMENT_LEVEL_SUM_THRESHOLD,
                 Set.copyOf(unlockedOvercapEnchantments)
         );
     }
 
+    private static int calculateCombinedPower(int regularBookshelfProviders, int qualifyingEnchantedBooks) {
+        int regularBookshelfPower = Math.min(Math.max(0, regularBookshelfProviders), VANILLA_BOOKSHELF_MAX_POWER);
+        int chiseledBookshelfPower = calculatePowerFromQualifyingEnchantedBooks(qualifyingEnchantedBooks);
+        return Math.min(regularBookshelfPower + chiseledBookshelfPower, EXTENDED_MAX_POWER);
+    }
 
-    private static int calculateTotalPower(int regularBookshelfPower, int qualifyingEnchantedBooks) {
-        int vanillaPower = Math.max(0, regularBookshelfPower);
-        int chiseledPower = Math.max(0, qualifyingEnchantedBooks) / ENCHANTED_BOOKS_PER_POWER_LEVEL;
-        return Math.min(vanillaPower + chiseledPower, EXTENDED_MAX_POWER);
+    private static int calculatePowerFromQualifyingEnchantedBooks(int qualifyingEnchantedBooks) {
+        int books = Math.max(0, qualifyingEnchantedBooks);
+        return Math.min(books / ENCHANTED_BOOKS_PER_POWER_LEVEL, EXTENDED_MAX_POWER);
     }
 
     /**
      * Vanilla's EnchantmentHelper caps bookshelf count at 15. This copy keeps the vanilla formula but raises the cap
-     * to this mod's extended power cap. With 90 qualifying books, the bottom offer can reach level 60.
+     * to this mod's extended power cap. With power 30, the bottom offer can reach level 60.
      */
     public static int calculateRequiredExperienceLevel(Random random, int slotIndex, int enchantingPower, ItemStack stack) {
         if (stack.get(DataComponentTypes.ENCHANTABLE) == null) {
@@ -130,15 +144,26 @@ public final class ChiseledBookshelfEnchantingPower {
     }
 
     /**
-     * Returns true when the block at {@code tablePos + providerOffset} provides enchanting power.
+     * Returns true when the block at {@code tablePos + providerOffset} is a valid power provider.
      */
     public static boolean canProvidePower(World world, BlockPos tablePos, BlockPos providerOffset) {
-        if (isRegularBookshelfPowerProvider(world, tablePos, providerOffset)) {
+        if (!canTransmitPower(world, tablePos, providerOffset)) {
+            return false;
+        }
+
+        BlockPos shelfPos = tablePos.add(providerOffset);
+        BlockState shelfState = world.getBlockState(shelfPos);
+
+        if (shelfState.isOf(Blocks.BOOKSHELF)) {
             return true;
         }
 
-        ChiseledBookshelfBlockEntity bookshelf = getValidChiseledBookshelf(world, tablePos, providerOffset);
-        if (bookshelf == null) {
+        if (!shelfState.isOf(Blocks.CHISELED_BOOKSHELF)) {
+            return false;
+        }
+
+        BlockEntity blockEntity = world.getBlockEntity(shelfPos);
+        if (!(blockEntity instanceof ChiseledBookshelfBlockEntity bookshelf)) {
             return false;
         }
 
@@ -151,15 +176,6 @@ public final class ChiseledBookshelfEnchantingPower {
                 && bookshelf instanceof ChiseledBookshelfEnchantingPowerState syncedState
                 && syncedState.chieseled_enchanting$getParticleWeight() >= REQUIRED_ENCHANTED_BOOKS_PER_POWER_PROVIDER;
     }
-
-    /**
-     * Returns true for an unobstructed vanilla bookshelf in a vanilla provider position.
-     */
-    public static boolean isRegularBookshelfPowerProvider(World world, BlockPos tablePos, BlockPos providerOffset) {
-        return canTransmitPower(world, tablePos, providerOffset)
-                && world.getBlockState(tablePos.add(providerOffset)).isOf(Blocks.BOOKSHELF);
-    }
-
 
     /**
      * Generates enchantments with unlocked over-cap levels without duplicating those enchantments in the weighted pool.
@@ -239,11 +255,27 @@ public final class ChiseledBookshelfEnchantingPower {
     }
 
     /**
-     * Returns this shelf's particle weight. Three enchanted books equal the vanilla particle rate.
+     * Returns this provider's particle weight. Regular bookshelves use the vanilla baseline; chiseled bookshelves
+     * scale by stored enchanted-book count, where three enchanted books equal the vanilla particle rate.
      */
     public static int getParticleWeight(World world, BlockPos tablePos, BlockPos providerOffset) {
-        ChiseledBookshelfBlockEntity bookshelf = getValidChiseledBookshelf(world, tablePos, providerOffset);
-        if (bookshelf == null) {
+        if (!canTransmitPower(world, tablePos, providerOffset)) {
+            return 0;
+        }
+
+        BlockPos shelfPos = tablePos.add(providerOffset);
+        BlockState shelfState = world.getBlockState(shelfPos);
+
+        if (shelfState.isOf(Blocks.BOOKSHELF)) {
+            return VANILLA_BOOKSHELF_PARTICLE_WEIGHT;
+        }
+
+        if (!shelfState.isOf(Blocks.CHISELED_BOOKSHELF)) {
+            return 0;
+        }
+
+        BlockEntity blockEntity = world.getBlockEntity(shelfPos);
+        if (!(blockEntity instanceof ChiseledBookshelfBlockEntity bookshelf)) {
             return 0;
         }
 
@@ -257,28 +289,12 @@ public final class ChiseledBookshelfEnchantingPower {
         return Math.max(0, Math.min(particleWeight, ChiseledBookshelfBlockEntity.MAX_BOOKS));
     }
 
-    private static ChiseledBookshelfBlockEntity getValidChiseledBookshelf(World world, BlockPos tablePos, BlockPos providerOffset) {
-        if (!canTransmitPower(world, tablePos, providerOffset)) {
-            return null;
-        }
-
-        return getChiseledBookshelf(world, tablePos.add(providerOffset));
-    }
-
-    private static ChiseledBookshelfBlockEntity getChiseledBookshelf(World world, BlockPos shelfPos) {
-        if (!world.getBlockState(shelfPos).isOf(Blocks.CHISELED_BOOKSHELF)) {
-            return null;
-        }
-
-        BlockEntity blockEntity = world.getBlockEntity(shelfPos);
-        return blockEntity instanceof ChiseledBookshelfBlockEntity bookshelf ? bookshelf : null;
-    }
-
     /**
      * Equivalent to the unobstructed-gap half of EnchantingTableBlock#canAccessPowerProvider.
      *
-     * <p>Do not call canAccessPowerProvider here: that method also checks the enchantment_power_provider block tag,
-     * and chiseled bookshelves are not in that tag unless a datapack adds them.</p>
+     * <p>Do not call canAccessPowerProvider here: that method also checks the enchantment_power_provider block tag.
+     * This mod intentionally counts vanilla regular bookshelves and its own chiseled-bookshelf logic directly, so a
+     * datapack cannot accidentally make chiseled bookshelves contribute both regular and chiseled power.</p>
      */
     private static boolean canTransmitPower(World world, BlockPos tablePos, BlockPos providerOffset) {
         BlockPos transmitterPos = tablePos.add(
@@ -333,7 +349,6 @@ public final class ChiseledBookshelfEnchantingPower {
 
         return true;
     }
-
 
     public static int getParticleWeightForStacks(Iterable<ItemStack> stacks) {
         return countEnchantedBooksWithEnchantments(stacks);

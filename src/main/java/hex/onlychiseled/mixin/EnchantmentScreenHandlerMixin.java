@@ -77,8 +77,8 @@ public abstract class EnchantmentScreenHandlerMixin extends ScreenHandler implem
      * Replaces vanilla's bookshelf count inside EnchantmentScreenHandler#onContentChanged.
      *
      * <p>The rest of the vanilla offer-generation algorithm is intentionally preserved except for the level cap.
-     * Regular bookshelves contribute one power each, just like vanilla. Chiseled bookshelves contribute through their
-     * qualifying enchanted-book count, scaling beyond vanilla linearly up to extended power 30.</p>
+     * Regular bookshelves contribute vanilla power up to 15. Chiseled bookshelves add custom power from qualifying
+     * enchanted-book count, and the combined room power is capped at the extended power cap of 30.</p>
      */
     @Redirect(
             method = "onContentChanged",

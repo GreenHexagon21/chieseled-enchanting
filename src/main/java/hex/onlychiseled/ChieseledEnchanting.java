@@ -10,6 +10,6 @@ public class ChieseledEnchanting implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        LOGGER.info("Chieseled Enchanting loaded: regular bookshelves and enchanted chiseled bookshelves now power enchanting tables.");
+        LOGGER.info("Chieseled Enchanting loaded: regular bookshelves and chiseled bookshelf libraries can power enchanting tables.");
     }
 }

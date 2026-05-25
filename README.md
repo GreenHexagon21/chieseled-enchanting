@@ -1,39 +1,40 @@
 # Chieseled Enchanting
 
-Fabric mod for Minecraft 1.21.10. Regular bookshelves keep their vanilla enchanting-table behavior, while nearby chiseled bookshelves can add extended power and library-based bonuses when they contain enchanted books.
+Fabric mod for Minecraft 1.21.10 that expands enchanting-table behavior while keeping regular bookshelves usable.
 
 ## Power rules
 
-A chiseled bookshelf is considered valid when it is:
+Regular bookshelves work like vanilla bookshelves again:
 
-- in one of the normal vanilla bookshelf positions around an enchanting table,
-- connected through an unobstructed enchantment-power transmitter gap, and
-- holding at least three enchanted books with stored enchantments.
+- they must be in one of the normal vanilla bookshelf positions around an enchanting table,
+- they must have an unobstructed enchantment-power transmitter gap, and
+- they contribute one power each, capped at vanilla power `15`.
 
-Regular bookshelves contribute `1` power each, exactly like vanilla. Chiseled bookshelf power scales linearly from qualifying enchanted-book count:
+Chiseled bookshelves use the same placement and gap rules, but only contribute custom power when they contain at least three enchanted books with stored enchantments.
 
-| Provider setup | Power |
-| --- | ---: |
-| 1 regular bookshelf | 1 |
-| 15 regular bookshelves | 15 |
-| 3 qualifying enchanted books in chiseled shelves | 1 |
-| 45 qualifying enchanted books in chiseled shelves | 15 |
-| 90+ qualifying enchanted books in chiseled shelves | 30 |
+Chiseled power scales linearly from qualifying enchanted-book count:
 
-Regular and chiseled power add together, capped at `30`.
+| Qualifying enchanted books | Chiseled power |
+| ---: | ---: |
+| 3 | 1 |
+| 45 | 15 |
+| 90+ | 30 |
+
+Combined room power is capped at `30`. Regular bookshelves alone cannot push enchanting power above `15`; chiseled bookshelf power is what allows the room to go beyond vanilla.
 
 ## Particles
 
-Enchanting-table particles use the same placement and gap rules as power. Regular bookshelves emit particles at the vanilla rate. Chiseled bookshelf frequency is based on the number of enchanted books in each shelf:
+Enchanting-table particles use the same placement and gap rules as power.
 
-| Enchanted books in shelf | Particle rate | Power from shelf |
-| ---: | --- | ---: |
-| 1 | `1/48` | 0 |
-| 2 | `2/48` | 0 |
-| 3 | `3/48`, equal to vanilla `1/16` | 1 |
-| 4 | `4/48` | 1 |
-| 5 | `5/48` | 1 |
-| 6 | `6/48` | 1 |
+| Provider | Particle rate |
+| --- | --- |
+| Regular bookshelf | vanilla `1/16` |
+| Chiseled shelf with 1 enchanted book | `1/48` |
+| Chiseled shelf with 2 enchanted books | `2/48` |
+| Chiseled shelf with 3 enchanted books | `3/48`, equal to vanilla `1/16` |
+| Chiseled shelf with 4 enchanted books | `4/48` |
+| Chiseled shelf with 5 enchanted books | `5/48` |
+| Chiseled shelf with 6 enchanted books | `6/48` |
 
 The client receives a compact integer particle weight from the server through the chiseled-bookshelf block entity update packet.
 
@@ -51,7 +52,7 @@ The visible offer level can scale up to the extended cap, but vanilla candidate 
 
 ## Second clue reveal
 
-If the sum of stored enchantment levels on all valid shelves is greater than `135`, the enchanting-table tooltip reveals a second enchantment clue when that offer contains at least two generated enchantments.
+If the sum of stored enchantment levels on all valid chiseled shelves is greater than `135`, the enchanting-table tooltip reveals a second enchantment clue when that offer contains at least two generated enchantments.
 
 The second clue is only UI information. It does not change the actual enchantment result.
 

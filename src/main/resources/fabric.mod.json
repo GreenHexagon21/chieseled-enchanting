@@ -3,7 +3,7 @@
 	"id": "chieseled-enchanting",
 	"version": "${version}",
 	"name": "Chieseled Enchanting",
-	"description": "Enhances enchanting tables with enchanted chiseled bookshelves while preserving vanilla bookshelf behavior.",
+	"description": "Keeps regular bookshelves as vanilla capped power providers and adds extended chiseled-bookshelf enchanting libraries.",
 	"authors": [
 		"Uto Buh"
 	],

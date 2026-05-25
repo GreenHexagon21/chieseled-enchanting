@@ -14,11 +14,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(EnchantingTableBlock.class)
 public abstract class EnchantingTableBlockMixin {
     /**
-     * Replaces the vanilla enchanting-table particle loop so regular bookshelves can keep vanilla particles while
-     * chiseled-bookshelf particle frequency scales with shelf contents.
+     * Replaces the vanilla enchanting-table particle loop so regular bookshelves and scaled chiseled bookshelves
+     * can share one bounded provider scan.
      *
-     * <p>Regular bookshelves use vanilla's 1-in-16 rate. Three enchanted books in a chiseled bookshelf match that
-     * baseline; fewer enchanted books emit less often, and more enchanted books emit more often.</p>
+     * <p>Vanilla checks each provider offset with a 1-in-16 chance. Regular bookshelves use that baseline. This mod
+     * treats three enchanted books in a chiseled bookshelf as the same baseline; fewer enchanted books emit less often,
+     * and more enchanted books emit more often.</p>
      */
     @Inject(method = "randomDisplayTick", at = @At("HEAD"), cancellable = true)
     private void chieseled_enchanting$spawnScaledChiseledBookshelfParticles(
@@ -31,40 +32,24 @@ public abstract class EnchantingTableBlockMixin {
         ci.cancel();
 
         for (BlockPos providerOffset : EnchantingTableBlock.POWER_PROVIDER_OFFSETS) {
-            if (ChiseledBookshelfEnchantingPower.isRegularBookshelfPowerProvider(world, tablePos, providerOffset)) {
-                if (random.nextInt(16) == 0) {
-                    chieseled_enchanting$spawnEnchantParticle(world, tablePos, providerOffset, random);
-                }
-                continue;
-            }
-
             int particleWeight = ChiseledBookshelfEnchantingPower.getParticleWeight(world, tablePos, providerOffset);
             if (particleWeight <= 0) {
                 continue;
             }
 
             // Scale around vanilla's 1-in-16 rate:
-            // 1 enchanted book = 1-in-48, 2 = 2-in-48, 3 = 3-in-48 = 1-in-16, 6 = 6-in-48 = 1-in-8.
+            // regular bookshelf = 3-in-48 = 1-in-16; chiseled shelves use one weight per enchanted book.
             if (random.nextInt(48) < particleWeight) {
-                chieseled_enchanting$spawnEnchantParticle(world, tablePos, providerOffset, random);
+                world.addParticleClient(
+                        ParticleTypes.ENCHANT,
+                        tablePos.getX() + 0.5,
+                        tablePos.getY() + 2.0,
+                        tablePos.getZ() + 0.5,
+                        providerOffset.getX() + random.nextFloat() - 0.5,
+                        providerOffset.getY() - random.nextFloat() - 1.0F,
+                        providerOffset.getZ() + random.nextFloat() - 0.5
+                );
             }
         }
-    }
-
-    private static void chieseled_enchanting$spawnEnchantParticle(
-            World world,
-            BlockPos tablePos,
-            BlockPos providerOffset,
-            Random random
-    ) {
-        world.addParticleClient(
-                ParticleTypes.ENCHANT,
-                tablePos.getX() + 0.5,
-                tablePos.getY() + 2.0,
-                tablePos.getZ() + 0.5,
-                providerOffset.getX() + random.nextFloat() - 0.5,
-                providerOffset.getY() - random.nextFloat() - 1.0F,
-                providerOffset.getZ() + random.nextFloat() - 0.5
-        );
     }
 }
