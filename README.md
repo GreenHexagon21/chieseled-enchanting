@@ -73,3 +73,8 @@ The mod jar will be written to `build/libs/`.
 ## License
 
 CC0-1.0.
+
+## Loader compatibility
+
+This source targets Minecraft 1.21.11 and declares Fabric Loader `>=0.18.4` so it works with the loader version commonly bundled in current Prism/Fabric 1.21.11 instances.
+
