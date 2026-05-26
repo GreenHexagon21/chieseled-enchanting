@@ -2,7 +2,7 @@
 	"schemaVersion": 1,
 	"id": "chieseled-enchanting",
 	"version": "${version}",
-	"name": "Chieseled Enchanting",
+	"name": "Enchanting - Chieseled",
 	"description": "Keeps regular bookshelves as vanilla capped power providers and adds extended chiseled-bookshelf enchanting libraries.",
 	"authors": [
 		"Uto Buh"
