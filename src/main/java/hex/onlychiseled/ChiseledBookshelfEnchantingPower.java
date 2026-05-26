@@ -77,12 +77,12 @@ public final class ChiseledBookshelfEnchantingPower {
             BlockPos shelfPos = tablePos.add(providerOffset);
             BlockState shelfState = world.getBlockState(shelfPos);
 
-            if (shelfState.isOf(Blocks.BOOKSHELF)) {
+            if (shelfState.is(Blocks.BOOKSHELF)) {
                 regularBookshelfProviders++;
                 continue;
             }
 
-            if (!shelfState.isOf(Blocks.CHISELED_BOOKSHELF)) {
+            if (!shelfState.is(Blocks.CHISELED_BOOKSHELF)) {
                 continue;
             }
 
@@ -154,11 +154,11 @@ public final class ChiseledBookshelfEnchantingPower {
         BlockPos shelfPos = tablePos.add(providerOffset);
         BlockState shelfState = world.getBlockState(shelfPos);
 
-        if (shelfState.isOf(Blocks.BOOKSHELF)) {
+        if (shelfState.is(Blocks.BOOKSHELF)) {
             return true;
         }
 
-        if (!shelfState.isOf(Blocks.CHISELED_BOOKSHELF)) {
+        if (!shelfState.is(Blocks.CHISELED_BOOKSHELF)) {
             return false;
         }
 
@@ -266,11 +266,11 @@ public final class ChiseledBookshelfEnchantingPower {
         BlockPos shelfPos = tablePos.add(providerOffset);
         BlockState shelfState = world.getBlockState(shelfPos);
 
-        if (shelfState.isOf(Blocks.BOOKSHELF)) {
+        if (shelfState.is(Blocks.BOOKSHELF)) {
             return VANILLA_BOOKSHELF_PARTICLE_WEIGHT;
         }
 
-        if (!shelfState.isOf(Blocks.CHISELED_BOOKSHELF)) {
+        if (!shelfState.is(Blocks.CHISELED_BOOKSHELF)) {
             return 0;
         }
 
@@ -384,7 +384,7 @@ public final class ChiseledBookshelfEnchantingPower {
     }
 
     private static ItemEnchantmentsComponent getStoredEnchantments(ItemStack stack) {
-        if (!stack.isOf(Items.ENCHANTED_BOOK)) {
+        if (!stack.is(Items.ENCHANTED_BOOK)) {
             return null;
         }
 

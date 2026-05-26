@@ -1,6 +1,6 @@
 # Chieseled Enchanting
 
-Fabric mod for Minecraft 1.21.11 that expands enchanting-table behavior while keeping regular bookshelves usable.
+Fabric mod for Minecraft 26.1–26.1.2 that expands enchanting-table behavior while keeping regular bookshelves usable.
 
 ## Power rules
 
@@ -76,5 +76,14 @@ CC0-1.0.
 
 ## Loader compatibility
 
-This source targets Minecraft 1.21.11 and declares Fabric Loader `>=0.18.4` so it works with the loader version commonly bundled in current Prism/Fabric 1.21.11 instances.
+This source targets the Minecraft 26.1–26.1.2 patch line and declares Minecraft compatibility as `>=26.1 <=26.1.2`. It keeps Fabric Loader `>=0.18.4` and uses Java 25, which is the expected runtime/toolchain for the 26.x line.
 
+
+### 26.x build target
+
+This source builds against Minecraft `26.1.2` using Yarn `26.1.2+build.1`, because the `org.relativitymc:modern-yarn:26.1+build.1` artifact is not published. The mod metadata still allows Minecraft `26.1`, `26.1.1`, and `26.1.2`. Use the Fabric API version matching the Minecraft instance you are running.
+
+
+## Minecraft 26.x build note
+
+This 26.x branch uses RelativityMC Modern Yarn mappings because Fabric does not publish `net.fabricmc:yarn` artifacts for Minecraft 26.x.
