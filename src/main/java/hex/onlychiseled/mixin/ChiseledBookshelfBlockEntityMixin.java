@@ -73,7 +73,7 @@ public abstract class ChiseledBookshelfBlockEntityMixin extends BlockEntity impl
     }
 
     /**
-     * 1.21.10 block entities read NBT through readData(ReadView), not readNbt(NbtCompound, WrapperLookup).
+     * 1.21.11 block entities read NBT through readData(ReadView), not readNbt(NbtCompound, WrapperLookup).
      */
     @Inject(method = "readData", at = @At("TAIL"))
     private void chieseled_enchanting$readSyncedParticleState(ReadView view, CallbackInfo ci) {

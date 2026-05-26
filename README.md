@@ -1,6 +1,6 @@
 # Chieseled Enchanting
 
-Fabric mod for Minecraft 1.21.10 that expands enchanting-table behavior while keeping regular bookshelves usable.
+Fabric mod for Minecraft 1.21.11 that expands enchanting-table behavior while keeping regular bookshelves usable.
 
 ## Power rules
 
