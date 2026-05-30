@@ -36,8 +36,11 @@ public final class ChiseledBookshelfEnchantingPower {
     public static final int EXTENDED_MAX_POWER = 30;
     public static final int OVERCAP_LEVEL_BONUS = 1;
     public static final int OVERCAP_PROMOTION_CHANCE_DENOMINATOR = 4;
-    public static final int VANILLA_POOL_GENERATION_LEVEL_CAP = 30;
     public static final int SECOND_REVEAL_ENCHANTMENT_LEVEL_SUM_THRESHOLD = 135;
+    public static final int SAFE_HIGH_LEVEL_CANDIDATE_BASE = 30;
+    public static final int HIGH_LEVEL_SAMPLE_STEP = 10;
+    public static final int HIGH_LEVEL_MAX_EXTRA_SAMPLES = 3;
+    public static final int HIGH_LEVEL_MAX_SAFE_LEVEL_SPREAD = 15;
 
     private ChiseledBookshelfEnchantingPower() {
     }
@@ -180,9 +183,10 @@ public final class ChiseledBookshelfEnchantingPower {
     /**
      * Generates enchantments with unlocked over-cap levels without duplicating those enchantments in the weighted pool.
      *
-     * <p>The displayed XP offer can rise above vanilla, but the candidate pool is capped at vanilla level 30 so finite
-     * cost-band enchantments such as Protection remain available. Already-selected unlocked max-level enchantments then
-     * get a small chance to promote by one level.</p>
+     * <p>Vanilla's enchantment selection behaves poorly above level 30 because many enchantments have finite power
+     * windows. Passing level 60 directly can shrink the candidate pool to a few entries or even no visible offer. For
+     * extended offers, this method samples several safe vanilla-level candidate pools and keeps the strongest valid
+     * result. The visible offer can still require level 60, but selection remains varied and non-empty.</p>
      */
     public static List<EnchantmentLevelEntry> generateEnchantmentsWithOvercapPool(
             Random random,
@@ -191,14 +195,99 @@ public final class ChiseledBookshelfEnchantingPower {
             Stream<RegistryEntry<Enchantment>> possibleEnchantments,
             Set<RegistryEntry<Enchantment>> unlockedOvercapEnchantments
     ) {
-        int vanillaCandidatePoolLevel = Math.max(1, Math.min(level, VANILLA_POOL_GENERATION_LEVEL_CAP));
-        List<EnchantmentLevelEntry> generatedEnchantments = EnchantmentHelper.generateEnchantments(
+        int generationLevel = Math.max(1, level);
+        List<RegistryEntry<Enchantment>> possibleEnchantmentList = possibleEnchantments.toList();
+
+        List<EnchantmentLevelEntry> generatedEnchantments = generationLevel <= SAFE_HIGH_LEVEL_CANDIDATE_BASE
+                ? generateVanillaEnchantments(random, stack, generationLevel, possibleEnchantmentList)
+                : generateBalancedHighLevelEnchantments(random, stack, generationLevel, possibleEnchantmentList);
+
+        return applyUnlockedOvercapPromotions(random, generatedEnchantments, unlockedOvercapEnchantments);
+    }
+
+    private static List<EnchantmentLevelEntry> generateVanillaEnchantments(
+            Random random,
+            ItemStack stack,
+            int level,
+            List<RegistryEntry<Enchantment>> possibleEnchantments
+    ) {
+        return EnchantmentHelper.generateEnchantments(
                 random,
                 stack,
-                vanillaCandidatePoolLevel,
+                Math.max(1, level),
+                possibleEnchantments.stream()
+        );
+    }
+
+    private static List<EnchantmentLevelEntry> generateBalancedHighLevelEnchantments(
+            Random random,
+            ItemStack stack,
+            int level,
+            List<RegistryEntry<Enchantment>> possibleEnchantments
+    ) {
+        List<EnchantmentLevelEntry> bestEnchantments = generateVanillaEnchantments(
+                random,
+                stack,
+                SAFE_HIGH_LEVEL_CANDIDATE_BASE,
                 possibleEnchantments
         );
+        int bestScore = scoreGeneratedEnchantments(bestEnchantments);
 
+        int extraSamples = Math.min(
+                HIGH_LEVEL_MAX_EXTRA_SAMPLES,
+                Math.max(1, (level - SAFE_HIGH_LEVEL_CANDIDATE_BASE + HIGH_LEVEL_SAMPLE_STEP - 1) / HIGH_LEVEL_SAMPLE_STEP)
+        );
+        int safeLevelSpread = Math.min(
+                HIGH_LEVEL_MAX_SAFE_LEVEL_SPREAD,
+                Math.max(0, level - SAFE_HIGH_LEVEL_CANDIDATE_BASE)
+        );
+
+        for (int sample = 0; sample < extraSamples; sample++) {
+            int sampledLevel = SAFE_HIGH_LEVEL_CANDIDATE_BASE;
+            if (safeLevelSpread > 0) {
+                sampledLevel -= random.nextInt(safeLevelSpread + 1);
+            }
+
+            List<EnchantmentLevelEntry> sampledEnchantments = generateVanillaEnchantments(
+                    random,
+                    stack,
+                    sampledLevel,
+                    possibleEnchantments
+            );
+            int sampledScore = scoreGeneratedEnchantments(sampledEnchantments);
+
+            if (sampledScore > bestScore) {
+                bestEnchantments = sampledEnchantments;
+                bestScore = sampledScore;
+            }
+        }
+
+        if (!bestEnchantments.isEmpty()) {
+            return bestEnchantments;
+        }
+
+        return generateVanillaEnchantments(
+                random,
+                stack,
+                Math.max(1, Math.min(level, SAFE_HIGH_LEVEL_CANDIDATE_BASE)),
+                possibleEnchantments
+        );
+    }
+
+    private static int scoreGeneratedEnchantments(List<EnchantmentLevelEntry> enchantments) {
+        int totalLevel = 0;
+        for (EnchantmentLevelEntry entry : enchantments) {
+            totalLevel += Math.max(0, entry.level());
+        }
+
+        return enchantments.size() * 100 + totalLevel;
+    }
+
+    private static List<EnchantmentLevelEntry> applyUnlockedOvercapPromotions(
+            Random random,
+            List<EnchantmentLevelEntry> generatedEnchantments,
+            Set<RegistryEntry<Enchantment>> unlockedOvercapEnchantments
+    ) {
         if (generatedEnchantments.isEmpty() || unlockedOvercapEnchantments.isEmpty()) {
             return generatedEnchantments;
         }
