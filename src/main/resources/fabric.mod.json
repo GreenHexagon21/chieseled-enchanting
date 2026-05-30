@@ -2,7 +2,7 @@
 	"schemaVersion": 1,
 	"id": "chieseled-enchanting",
 	"version": "${version}",
-	"name": "Enchanting - Chieseled",
+	"name": "Enchanting - Chiseled",
 	"description": "Extend enchanting levels with chiseled bookshelf and adds other functionality as well.",
 	"authors": [
 		"Reppeti"
